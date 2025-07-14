@@ -8,8 +8,60 @@
 import SwiftUI
 
 struct MainView: View {
+}
+
+extension MainView {
   var body: some View {
-    Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+    ZStack(alignment: .topLeading) {
+      Color.clear.ignoresSafeArea()
+      VStack {
+        Text("당신의 집중을 분석해 보세요")
+          .font(.title)
+        
+        Spacer()
+        
+        VStack {
+          Button {
+          } label: {
+            Text("시작")
+              .foregroundStyle(.white)
+              .frame(width: 150, height: 150)
+              .background(.black)
+              .clipShape(.circle)
+          }
+          .buttonStyle(.plain)
+          
+          bottomButtonView
+        }
+        Spacer()
+      }
+    }.padding(.horizontal, 16)
+  }
+  
+  private var bottomButtonView: some View {
+    HStack {
+      Button {
+      } label: {
+        Text("기록")
+          .foregroundStyle(.white)
+          .frame(width: 100, height: 100)
+          .background(.black)
+          .clipShape(.circle)
+      }
+      .buttonStyle(.plain)
+      
+      Spacer()
+      
+      Button {
+      } label: {
+        Text("설정")
+          .foregroundStyle(.white)
+          .frame(width: 100, height: 100)
+          .background(.black)
+          .clipShape(.circle)
+      }
+      .buttonStyle(.plain)
+    }
   }
 }
 
