@@ -14,7 +14,7 @@ final class RecordViewModel: ObservableObject {
   @Published var rollAngles: [Double] = []
   @Published var predictedLabel: String = "-"
   @Published var predictionConfidence: Double = 0.0
-
+  
   // 원래는 옵셔널 바인딩 해야합니다~ 프로토타입이니까 강제언래핑 합니다
   private let mlManager = MLManager()!
   private let cameraManager = CameraManager()
@@ -35,7 +35,6 @@ final class RecordViewModel: ObservableObject {
     }
     
     cameraManager.onPoseUpdate = { [weak self] pose in
-      print("포즈 업데이트 진입")
       self?.mlManager.addPoseObservation(from: pose)
     }
     
