@@ -22,7 +22,7 @@ struct RecordView: View {
   
   @State private var timerTime = 0
   @State private var timerRunning = true
-  @State private var timer:Timer?=nil
+  @State private var timer: Timer? = nil
   
   @State private var savedBrightness: CGFloat = UIScreen.main.brightness
   @State private var brightnessResetWorkItem: DispatchWorkItem? = nil
@@ -30,7 +30,74 @@ struct RecordView: View {
   init(viewModel: RecordViewModel) {
     _viewModel = StateObject(wrappedValue: viewModel)
   }
-  
+}
+
+extension RecordView {
+  var body: some View {
+    ZStack {
+      Color.clear.ignoresSafeArea()
+      VStack {
+        ZStack{
+          CameraView(session: viewModel.session)
+          VStack{
+            Spacer()
+            Text(timeString(from: timerTime))
+              .font(.largeTitle).font(.largeTitle)
+            Spacer()
+            Spacer()
+            Spacer()
+            HStack{
+              Spacer()
+              Button{
+                timer?.invalidate()
+              }label:{
+                Text("정지")
+              }.buttonStyle(.borderedProminent)
+                .tint(.red)
+              Spacer()
+              Button{
+                timerRunning.toggle()
+                if timerRunning{
+                  StartTimer()
+                }else{
+                  timer?.invalidate()
+                }
+              }label:{
+                Text(timerRunning ? "일시정지":"다시시작")
+              }.buttonStyle(.borderedProminent)
+                .tint(.blue)
+              Spacer()
+            }
+            Spacer()
+          }
+        }
+        VStack {
+          Text("rolls: \(viewModel.rollAngles)") // 고개를 좌/우로 기울이는 동작
+          Text("yaw: \(viewModel.yawAngles)") // 고개를 좌/우로 도리도리 하는 동작
+          Text("Pose: \(viewModel.predictedLabel)")
+          Text("Pose%: \(viewModel.predictionConfidence)")
+        }
+        .font(.headline)
+      }
+    }
+    .onAppear {
+      savedBrightness = UIScreen.main.brightness
+      viewModel.start()
+      StartTimer()
+      setLowestBrightness()
+    }
+    .onDisappear {
+      viewModel.stop()
+      StopTimer()
+      restoreBrightness()
+    }
+    .onTapGesture {
+      showBrightnessTemporarily()
+    }
+  }
+}
+
+extension RecordView {
   private func StartTimer(){
     timer?.invalidate()
     timer = Timer.scheduledTimer(withTimeInterval: 1.0,repeats: true){ _ in
@@ -80,74 +147,6 @@ struct RecordView: View {
     }
     brightnessResetWorkItem = workItem
     DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: workItem)
-  }
-}
-
-extension RecordView {
-  var body: some View {
-    ZStack {
-      Color.clear.ignoresSafeArea()
-      
-      VStack {
-        ZStack{
-          CameraView(session: viewModel.session)
-          VStack{
-            Spacer()
-            Text(timeString(from: timerTime))
-              .font(.largeTitle).font(.largeTitle)
-            Spacer()
-            Spacer()
-            Spacer()
-            HStack{
-              Spacer()
-              Button{
-                timer?.invalidate()
-              }label:{
-                Text("정지")
-              }.buttonStyle(.borderedProminent)
-                .tint(.red)
-              Spacer()
-              Button{
-                timerRunning.toggle()
-                if timerRunning{
-                  StartTimer()
-                }else{
-                  timer?.invalidate()
-                }
-              }label:{
-                Text(timerRunning ? "일시정지":"다시시작")
-              }.buttonStyle(.borderedProminent)
-                .tint(.blue)
-              Spacer()
-            }
-            Spacer()
-          }
-        }
-        
-        VStack {
-          Text("rolls: \(viewModel.rollAngles)") // 고개를 좌/우로 기울이는 동작
-          Text("yaw: \(viewModel.yawAngles)") // 고개를 좌/우로 도리도리 하는 동작
-          Text("Pose: \(viewModel.predictedLabel)")
-          Text("Pose%: \(viewModel.predictionConfidence)")
-        }
-        .font(.headline)
-      }
-      
-    }
-    .onAppear {
-      savedBrightness = UIScreen.main.brightness
-      viewModel.start()
-      StartTimer()
-      setLowestBrightness()
-    }
-    .onDisappear {
-      viewModel.stop()
-      StopTimer()
-      restoreBrightness()
-    }
-    .onTapGesture {
-      showBrightnessTemporarily()
-    }
   }
 }
 
