@@ -9,14 +9,14 @@ import SwiftUI
 
 // MARK: - Var
 struct MeasureSheetView: View {
-  // MARK: - ViewModel
+  // ViewModel
   @ObservedObject private var viewModel: MeasureViewModel
   
-  // MARK: - General Var
+  // General Var
   @Environment(\.dismiss) private var dismiss
   @State private var isTimerButtonState: Bool = false
   
-  // MARK: - init
+  // init
   init(viewModel: MeasureViewModel) {
     _viewModel = ObservedObject(wrappedValue: viewModel)
   }
