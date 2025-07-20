@@ -11,16 +11,27 @@ import SwiftUI
 import Vision
 
 final class MeasureViewModel: ObservableObject {
-  // MARK: - Published Var
+  // Published Var
   @Published var yawAngles: [Double] = []
   @Published var rollAngles: [Double] = []
   @Published var predictedLabel: String = "-"
   @Published var predictionConfidence: Double = 0.0
   @Published private var secondsElapsed: Int = 0
   @Published var timerState: TimerState = .stopped
+  @Published var isAutoBrightnessModeOn: Bool = false {
+    didSet {
+      if !isAutoBrightnessModeOn {
+        startAutoBrightnessMode()
+      } else {
+        cancelAutoBrightnessMode()
+        restoreBrightness()
+      }
+    }
+  }
   
-  // MARK: - General Var
+  // General Var
   private var timer: Timer?
+  private var brightnessTimer: DispatchWorkItem?
   
   var timeString: String {
     let hrs = secondsElapsed / 3600
@@ -29,7 +40,7 @@ final class MeasureViewModel: ObservableObject {
     return String(format: "%02d:%02d:%02d", hrs, mins, secs)
   }
   
-  // MARK: - Manager
+  // Manager
   private let mlManager = MLManager()!
   private let cameraManager = CameraManager()
   
@@ -37,7 +48,7 @@ final class MeasureViewModel: ObservableObject {
     cameraManager.session
   }
   
-  // MARK: - init
+  // init
   init() {
     cameraManager.requestAndCheckPermissions()
     
@@ -57,9 +68,15 @@ final class MeasureViewModel: ObservableObject {
       self?.predictedLabel = label
       self?.predictionConfidence = confidence
     }
+    
+    if !isAutoBrightnessModeOn {
+      startAutoBrightnessMode()
+    } else {
+      restoreBrightness()
+    }
   }
   
-  // MARK: - Func
+  // Func
   func cameraStart() {
     cameraManager.startSession()
   }
@@ -97,5 +114,26 @@ final class MeasureViewModel: ObservableObject {
     timer = nil
     secondsElapsed = 0
     timerState = .stopped
+  }
+}
+
+// MARK: - Private Func
+private extension MeasureViewModel {
+  func startAutoBrightnessMode() {
+    brightnessTimer?.cancel()
+    let task = DispatchWorkItem {
+      UIScreen.main.brightness = 0.01
+    }
+    brightnessTimer = task
+    DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: task)
+  }
+  
+  func cancelAutoBrightnessMode() {
+    brightnessTimer?.cancel()
+    brightnessTimer = nil
+  }
+  
+  func restoreBrightness() {
+    UIScreen.main.brightness = 1.0
   }
 }
