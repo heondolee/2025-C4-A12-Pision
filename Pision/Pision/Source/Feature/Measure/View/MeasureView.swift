@@ -11,14 +11,14 @@ import SwiftUI
 
 // MARK: - Var
 struct MeasureView: View {
-  // MARK: - ViewModel
+  // ViewModel
   @StateObject private var viewModel: MeasureViewModel
   
-  // MARK: - General Var
+  // General Var
   @State private var isSheetPresented: Bool = false
   @State private var isBottomButtonPresented: Bool = true
   
-  // MARK: - init
+  // init
   init(viewModel: MeasureViewModel) {
     _viewModel = StateObject(wrappedValue: viewModel)
   }
@@ -34,6 +34,12 @@ extension MeasureView {
         .ignoresSafeArea()
       
       VStack {
+        MeasureToggleButtonView(
+          viewModel: viewModel,
+          buttonWidth: 63,
+          height: 38
+        )
+        
         Spacer()
         MeasureBottomView
       }
