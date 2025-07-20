@@ -9,19 +9,23 @@ import SwiftUI
 
 // MARK: - Var
 struct MeasureToggleButtonView: View {
+  // ViewModel
   @ObservedObject private var viewModel: MeasureViewModel
   
+  // State Var
   @State private var isOn: Bool = false
   
+  // General Var
   let buttonWidth: CGFloat
   let height: CGFloat
   
+  // init
   init(
     viewModel: MeasureViewModel,
     buttonWidth: CGFloat,
     height: CGFloat
   ) {
-    _viewModel = ObservedObject(wrappedValue: viewModel)
+    self.viewModel = viewModel
     self.buttonWidth = buttonWidth
     self.height = height
   }
@@ -70,4 +74,8 @@ extension MeasureToggleButtonView {
     .clipShape(Capsule())
     .padding(.horizontal, 16)
   }
+}
+
+#Preview {
+  MeasureToggleButtonView(viewModel: MeasureViewModel(), buttonWidth: 63, height: 36)
 }

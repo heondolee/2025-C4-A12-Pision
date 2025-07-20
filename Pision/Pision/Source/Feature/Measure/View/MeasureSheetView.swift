@@ -17,8 +17,10 @@ struct MeasureSheetView: View {
   @State private var isTimerButtonState: Bool = false
   
   // init
-  init(viewModel: MeasureViewModel) {
-    _viewModel = ObservedObject(wrappedValue: viewModel)
+  init(
+    viewModel: MeasureViewModel
+  ) {
+    self.viewModel = viewModel
   }
 }
 
