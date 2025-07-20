@@ -19,8 +19,8 @@ struct MeasureView: View {
   @State private var isBottomButtonPresented: Bool = true
   
   // init
-  init(viewModel: MeasureViewModel) {
-    _viewModel = StateObject(wrappedValue: viewModel)
+  init() {
+    _viewModel = StateObject(wrappedValue: MeasureViewModel())
   }
 }
 
@@ -98,7 +98,7 @@ extension MeasureView {
 }
 
 #Preview {
-  MeasureView(viewModel: MeasureViewModel())
+  MeasureView()
 }
 
 
