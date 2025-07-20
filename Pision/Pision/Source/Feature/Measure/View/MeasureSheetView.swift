@@ -1,0 +1,105 @@
+//
+//  MeasureSheetView.swift
+//  Pision
+//
+//  Created by 여성일 on 7/20/25.
+//
+
+import SwiftUI
+
+// MARK: - Var
+struct MeasureSheetView: View {
+  // MARK: - ViewModel
+  @ObservedObject private var viewModel: MeasureViewModel
+  
+  // MARK: - General Var
+  @Environment(\.dismiss) private var dismiss
+  @State private var isTimerButtonState: Bool = false
+  
+  // MARK: - init
+  init(viewModel: MeasureViewModel) {
+    _viewModel = ObservedObject(wrappedValue: viewModel)
+  }
+}
+
+// MARK: - View
+extension MeasureSheetView {
+  var body: some View {
+    ZStack {
+      Color.white.ignoresSafeArea()
+      
+      VStack(alignment: .center) {
+        Text("학습시간")
+          .foregroundStyle(.black)
+        
+        infoView
+        
+        Text("80%")
+          .foregroundStyle(.white)
+          .frame(width: 109, height: 40)
+          .background(.gray)
+          .clipShape(.capsule)
+      }
+    }
+  }
+  
+  private var infoView: some View {
+    HStack(spacing: 63) {
+      Button {
+        togleButtonAction()
+      } label: {
+        Image(systemName: togleButtonImage())
+          .foregroundStyle(.black)
+          .frame(width: 44, height: 44)
+          .background(.gray)
+          .clipShape(.circle)
+      }
+      .buttonStyle(.plain)
+      
+      Text(viewModel.timeString)
+        .foregroundStyle(.black)
+        .font(.title)
+      
+      Button {
+        viewModel.timerStop()
+        dismiss()
+      } label: {
+        Image(systemName: "stop.fill")
+          .foregroundStyle(.white)
+          .frame(width: 44, height: 44)
+          .background(.blue)
+          .clipShape(.circle)
+      }
+      .buttonStyle(.plain)
+    }
+  }
+}
+
+// MARK: - Func
+extension MeasureSheetView {
+  private func togleButtonImage() -> String {
+    switch viewModel.timerState {
+    case .stopped:
+      return "play.fill"
+    case .running:
+      return "pause.fill"
+    case .pause:
+      return "play.fill"
+    }
+  }
+  
+  private func togleButtonAction() {
+    switch viewModel.timerState {
+    case .stopped:
+      break
+    case .running:
+      viewModel.timerPause()
+    case .pause:
+      viewModel.timerResume()
+    }
+  }
+}
+
+#Preview {
+  MeasureSheetView(viewModel: MeasureViewModel())
+}
