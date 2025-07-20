@@ -9,14 +9,14 @@ import SwiftUI
 
 // MARK: - Var
 struct MeasureSheetView: View {
-  // MARK: - ViewModel
+  // ViewModel
   @ObservedObject private var viewModel: MeasureViewModel
   
-  // MARK: - General Var
+  // General Var
   @Environment(\.dismiss) private var dismiss
   @State private var isTimerButtonState: Bool = false
   
-  // MARK: - init
+  // init
   init(viewModel: MeasureViewModel) {
     _viewModel = ObservedObject(wrappedValue: viewModel)
   }
@@ -46,9 +46,9 @@ extension MeasureSheetView {
   private var infoView: some View {
     HStack(spacing: 63) {
       Button {
-        togleButtonAction()
+        toggleButtonAction()
       } label: {
-        Image(systemName: togleButtonImage())
+        Image(systemName: toggleButtonImage())
           .foregroundStyle(.black)
           .frame(width: 44, height: 44)
           .background(.gray)
@@ -77,7 +77,7 @@ extension MeasureSheetView {
 
 // MARK: - Func
 extension MeasureSheetView {
-  private func togleButtonImage() -> String {
+  private func toggleButtonImage() -> String {
     switch viewModel.timerState {
     case .stopped:
       return "play.fill"
@@ -88,7 +88,7 @@ extension MeasureSheetView {
     }
   }
   
-  private func togleButtonAction() {
+  private func toggleButtonAction() {
     switch viewModel.timerState {
     case .stopped:
       break
