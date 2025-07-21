@@ -12,12 +12,12 @@ import Vision
 
 final class MeasureViewModel: ObservableObject {
   // Published Var
-  @Published var yawAngles: [Double] = []
-  @Published var rollAngles: [Double] = []
-  @Published var predictedLabel: String = "-"
-  @Published var predictionConfidence: Double = 0.0
+  @Published private(set) var yawAngles: [Double] = []
+  @Published private(set) var rollAngles: [Double] = []
+  @Published private(set) var predictedLabel: String = "-"
+  @Published private(set) var predictionConfidence: Double = 0.0
   @Published private var secondsElapsed: Int = 0
-  @Published var timerState: TimerState = .stopped
+  @Published private(set) var timerState: TimerState = .stopped
   @Published var isAutoBrightnessModeOn: Bool = false {
     didSet {
       if !isAutoBrightnessModeOn {
