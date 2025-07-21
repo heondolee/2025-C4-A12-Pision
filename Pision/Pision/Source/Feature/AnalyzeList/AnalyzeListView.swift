@@ -9,7 +9,7 @@ import SwiftUI
 
 struct AnalyzeListView: View {
   
-  var records: [Record] = sampleRecords
+  private var records: [Record] = sampleRecords
   
   var body: some View {
     VStack{
