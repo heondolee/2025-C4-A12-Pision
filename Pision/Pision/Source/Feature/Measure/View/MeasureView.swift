@@ -33,6 +33,10 @@ extension MeasureView {
       CameraView(session: viewModel.session)
         .ignoresSafeArea()
       
+      LinearGradient(colors: [Color.gradientGray, Color.white.opacity(0)], startPoint: .top, endPoint: .bottom)
+        .ignoresSafeArea()
+        .frame(maxWidth: .infinity, maxHeight: 116)
+      
       VStack {
         MeasureToggleButtonView(
           viewModel: viewModel,
@@ -41,7 +45,9 @@ extension MeasureView {
         )
         
         Spacer()
-        MeasureBottomView
+        
+        MeasureSheetView(viewModel: viewModel)
+          .frame(maxWidth: .infinity, maxHeight: 196)
       }
     }
     .onAppear {
@@ -49,11 +55,6 @@ extension MeasureView {
     }
     .onDisappear {
       viewModel.cameraStop()
-    }
-    .sheet(isPresented: $isSheetPresented) {
-      MeasureSheetView(viewModel: viewModel)
-        .presentationDetents([.height(180)])
-        .presentationDragIndicator(.visible)
     }
   }
   

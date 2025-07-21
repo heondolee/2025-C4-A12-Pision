@@ -28,7 +28,9 @@ struct MeasureSheetView: View {
 extension MeasureSheetView {
   var body: some View {
     ZStack {
-      Color.white.ignoresSafeArea()
+      Color.white
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .ignoresSafeArea()
       
       VStack(alignment: .center) {
         Text("학습시간")
