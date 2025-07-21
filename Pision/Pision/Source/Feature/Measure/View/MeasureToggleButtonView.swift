@@ -11,10 +11,7 @@ import SwiftUI
 struct MeasureToggleButtonView: View {
   // ViewModel
   @ObservedObject private var viewModel: MeasureViewModel
-  
-  // State Var
-  @State private var isOn: Bool = false
-  
+
   // General Var
   let buttonWidth: CGFloat
   let height: CGFloat
@@ -43,7 +40,7 @@ extension MeasureToggleButtonView {
         .fill(.white)
         .frame(width: buttonWidth, height: height)
         .offset(x: viewModel.isAutoBrightnessModeOn ? buttonWidth : 0)
-        .animation(.easeInOut(duration: 0.25), value: isOn)
+        .animation(.easeInOut(duration: 0.25), value: viewModel.isAutoBrightnessModeOn)
       
       HStack(spacing: 0) {
         Button {
