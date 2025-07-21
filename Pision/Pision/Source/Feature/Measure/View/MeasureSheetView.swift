@@ -13,7 +13,6 @@ struct MeasureSheetView: View {
   @ObservedObject private var viewModel: MeasureViewModel
   
   // General Var
-  @Environment(\.dismiss) private var dismiss
   @State private var isTimerButtonState: Bool = false
   
   // init
@@ -66,7 +65,6 @@ extension MeasureSheetView {
       
       Button {
         viewModel.timerStop()
-        dismiss()
       } label: {
         Image(systemName: "stop.fill")
           .foregroundStyle(.white)
