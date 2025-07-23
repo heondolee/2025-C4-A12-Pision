@@ -6,14 +6,16 @@
 //
 
 import AVFoundation
+import Combine
 import Foundation
 import SwiftUI
 import Vision
 
 final class MeasureViewModel: ObservableObject {
+  private var cancellables = Set<AnyCancellable>()
+  
   // Published Var
-  @Published private(set) var yawAngles: [Double] = []
-  @Published private(set) var rollAngles: [Double] = []
+  @Published private(set) var pose: VNHumanBodyPoseObservation?
   @Published private(set) var predictedLabel: String = "-"
   @Published private(set) var predictionConfidence: Double = 0.0
   @Published private var secondsElapsed: Int = 0
@@ -30,6 +32,9 @@ final class MeasureViewModel: ObservableObject {
   }
   
   // General Var
+  var coreScoreHistory: [CoreScore] = []
+  var auxScoreHistory: [AuxScore] = []
+  var totalScoreHistory: [Float] = []
   private var timer: Timer?
   private var brightnessTimer: DispatchWorkItem?
   
@@ -42,7 +47,8 @@ final class MeasureViewModel: ObservableObject {
   
   // Manager
   private let mlManager = MLManager()!
-  private let cameraManager = CameraManager()
+  private let cameraManager: CameraManager
+  private let visionManager = VisionManager()
   
   var session: AVCaptureSession {
     cameraManager.session
@@ -50,24 +56,9 @@ final class MeasureViewModel: ObservableObject {
   
   // init
   init() {
+    cameraManager = CameraManager(visionManager: visionManager)
     cameraManager.requestAndCheckPermissions()
-    
-    cameraManager.onYawsUpdate = { [weak self] yaws in
-      self?.yawAngles = yaws
-    }
-    
-    cameraManager.onRollsUpdate = { [weak self] rolls in
-      self?.rollAngles = rolls
-    }
-    
-    cameraManager.onPoseUpdate = { [weak self] pose in
-      self?.mlManager.addPoseObservation(from: pose)
-    }
-    
-    mlManager.onPrediction = { [weak self] label, confidence in
-      self?.predictedLabel = label
-      self?.predictionConfidence = confidence
-    }
+    bindScore()
     
     if !isAutoBrightnessModeOn {
       startAutoBrightnessMode()
@@ -89,24 +80,22 @@ final class MeasureViewModel: ObservableObject {
     timerStop()
     secondsElapsed = 0
     timerState = .running
-    timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-      self?.secondsElapsed += 1
-    }
+    startTimerLoop()
+    cameraManager.startMeasuring()
   }
   
   func timerPause() {
     guard timerState == .running else { return }
-    print(timeString)
     timer?.invalidate()
     timerState = .pause
+    cameraManager.stopMeasuring()
   }
   
   func timerResume() {
     guard timerState == .pause else { return }
     timerState = .running
-    timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-      self?.secondsElapsed += 1
-    }
+    startTimerLoop()
+    cameraManager.startMeasuring()
   }
   
   func timerStop() {
@@ -114,11 +103,30 @@ final class MeasureViewModel: ObservableObject {
     timer = nil
     secondsElapsed = 0
     timerState = .stopped
+    cameraManager.stopMeasuring()
   }
 }
 
 // MARK: - Private Func
 private extension MeasureViewModel {
+  func bindScore() {
+    visionManager.$latestCoreScore
+      .compactMap { $0 }
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] score in
+        self?.coreScoreHistory.append(score)
+      }
+      .store(in: &cancellables)
+    
+    visionManager.$latestAuxScore
+      .compactMap { $0 }
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] score in
+        self?.auxScoreHistory.append(score)
+      }
+      .store(in: &cancellables)
+  }
+  
   func startAutoBrightnessMode() {
     brightnessTimer?.cancel()
     let task = DispatchWorkItem {
@@ -135,5 +143,16 @@ private extension MeasureViewModel {
   
   func restoreBrightness() {
     UIScreen.main.brightness = 1.0
+  }
+  
+  func startTimerLoop() {
+    timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+      guard let self = self else { return }
+      self.secondsElapsed += 1
+      
+      if self.secondsElapsed % 30 == 0 {
+        self.visionManager.calculateAllScores()
+      }
+    }
   }
 }
