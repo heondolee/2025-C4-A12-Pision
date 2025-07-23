@@ -11,6 +11,6 @@ struct CoreScore {
   let yawScore: Float
   let eyeOpenScore: Float
   let eyeClosedScore: Float
-  let blinkScore: Float
+  let blinkFrequency: Float
   let coreScore: Float
 }

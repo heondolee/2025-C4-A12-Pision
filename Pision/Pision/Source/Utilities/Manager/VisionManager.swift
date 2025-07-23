@@ -158,19 +158,19 @@ extension VisionManager {
     let eyeClosedRatio = (Float(ears.filter { $0 < 0.1 }.count) * 0.0405) / 30.0
     let eyeClosedScore = (1.0 - minMaxNormalize(value: eyeClosedRatio, minValue: 0, maxValue: 1)) * 100 * 0.20
     let blinkRatio = Float(blinkCount) / 15
-    let blinkScore = max(0, (1.0 - blinkRatio) * 100 * 0.25)
+    let blinkFrequency = max(0, (1.0 - blinkRatio) * 100 * 0.25)
 
-    let coreScoreValue = yawScore + eyeOpenScore + blinkScore + eyeClosedScore
+    let coreScoreValue = yawScore + eyeOpenScore + blinkFrequency + eyeClosedScore
     let core = CoreScore(
       yawScore: yawScore,
       eyeOpenScore: eyeOpenScore,
       eyeClosedScore: eyeClosedScore,
-      blinkScore: blinkScore,
+      blinkFrequency: blinkFrequency,
       coreScore: coreScoreValue
     )
     
     // Calc AuxScore
-    let blinkScoreAux = (1.0 - minMaxNormalize(value: Float(blinkCount), maxValue: 30)) * 100 * 0.25
+    let blinkScore = (1.0 - minMaxNormalize(value: Float(blinkCount), maxValue: 30)) * 100 * 0.25
     
     let yawDiffs = zip(yaws.dropFirst(), yaws).map { abs($0 - $1) }
     let avgYawChange = yawDiffs.average()
@@ -187,10 +187,10 @@ extension VisionManager {
     let snoozeRatio: Float = snoozePredictions.isEmpty ? 0 : Float(snoozeCount) / Float(snoozePredictions.count)
     let mlSnoozeScore = pow(1.0 - snoozeRatio, 2) * 100 * 0.4
     
-    let auxScoreValue = blinkScoreAux + yawStabilityScore + mlSnoozeScore
+    let auxScoreValue = blinkScore + yawStabilityScore + mlSnoozeScore
     
     let aux = AuxScore(
-      blinkScore: blinkScoreAux,
+      blinkScore: blinkScore,
       yawStabilityScore: yawStabilityScore,
       mlSnoozeScore: mlSnoozeScore,
       AuxScore: auxScoreValue
