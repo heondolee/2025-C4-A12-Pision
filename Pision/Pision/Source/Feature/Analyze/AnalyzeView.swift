@@ -20,6 +20,11 @@ extension AnalyzeView {
       VStack(spacing: 24) {
         FocusTimeOverview(taskData: taskData)
         HourlyFocusChart(taskData: taskData)
+        HStack {
+          Text("측정 상세")
+            .font(.headline)
+          Spacer()
+        }
         CoreScoreSection(taskData: taskData)
         AuxScoreSection(taskData: taskData)
       }
@@ -128,29 +133,32 @@ extension AnalyzeView {
 
     var body: some View {
       VStack(alignment: .leading, spacing: 8) {
-        Text("Core Score 세부 지표")
+        Text("Core Score")
           .font(.headline)
+        Text("평균 \(Int(taskData.averageCoreScore())) 점")
 
-        Chart {
-          ForEach(coreScoreEntries) { entry in
-            LineMark(
-              x: .value("Index", entry.index),
-              y: .value("Score", entry.value)
-            )
-            .interpolationMethod(.catmullRom)
-            .foregroundStyle(by: .value("Category", entry.category))
+        ScrollView(.horizontal) {
+          Chart {
+            ForEach(coreScoreEntries) { entry in
+              LineMark(
+                x: .value("Index", entry.index),
+                y: .value("Score", entry.value)
+              )
+              .interpolationMethod(.catmullRom)
+              .foregroundStyle(by: .value("Category", entry.category))
 
-            PointMark(
-              x: .value("Index", entry.index),
-              y: .value("Score", entry.value)
-            )
-            .symbolSize(20)
-            .foregroundStyle(by: .value("Category", entry.category))
+              PointMark(
+                x: .value("Index", entry.index),
+                y: .value("Score", entry.value)
+              )
+              .symbolSize(20)
+              .foregroundStyle(by: .value("Category", entry.category))
+            }
           }
+          .chartYScale(domain: 0...100)
+          .chartLegend(.visible)
+          .frame(width: 400, height: 250) // ← 폭 넉넉히 주기
         }
-        .chartYScale(domain: 0...100)
-        .chartLegend(.visible)
-        .frame(height: 250)
       }
     }
   }
@@ -184,29 +192,32 @@ extension AnalyzeView {
 
     var body: some View {
       VStack(alignment: .leading, spacing: 8) {
-        Text("Aux Score 세부 지표")
+        Text("Aux Score")
           .font(.headline)
+        Text("평균 \(Int(taskData.averageAuxScore())) 점")
 
-        Chart {
-          ForEach(auxScoreEntries) { entry in
-            LineMark(
-              x: .value("Index", entry.index),
-              y: .value("Score", entry.value)
-            )
-            .interpolationMethod(.catmullRom)
-            .foregroundStyle(by: .value("Category", entry.category))
+        ScrollView(.horizontal) {
+          Chart {
+            ForEach(auxScoreEntries) { entry in
+              LineMark(
+                x: .value("Index", entry.index),
+                y: .value("Score", entry.value)
+              )
+              .interpolationMethod(.catmullRom)
+              .foregroundStyle(by: .value("Category", entry.category))
 
-            PointMark(
-              x: .value("Index", entry.index),
-              y: .value("Score", entry.value)
-            )
-            .symbolSize(20)
-            .foregroundStyle(by: .value("Category", entry.category))
+              PointMark(
+                x: .value("Index", entry.index),
+                y: .value("Score", entry.value)
+              )
+              .symbolSize(20)
+              .foregroundStyle(by: .value("Category", entry.category))
+            }
           }
+          .chartYScale(domain: 0...100)
+          .chartLegend(.visible)
+          .frame(width: 600, height: 250)
         }
-        .chartYScale(domain: 0...100)
-        .chartLegend(.visible)
-        .frame(height: 250)
       }
     }
   }
