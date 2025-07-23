@@ -5,6 +5,7 @@
 //  Created by 여성일 on 7/20/25.
 //
 
+import SwiftData
 import SwiftUI
 
 // MARK: - Var
@@ -12,14 +13,16 @@ struct MeasureSheetView: View {
   // ViewModel
   @ObservedObject private var viewModel: MeasureViewModel
   
-  // General Var
-  @State private var isTimerButtonState: Bool = false
-  
+  // SwiftData
+  private let context: ModelContext
+
   // init
   init(
-    viewModel: MeasureViewModel
+    viewModel: MeasureViewModel,
+    context: ModelContext
   ) {
     self.viewModel = viewModel
+    self.context = context
   }
 }
 
@@ -64,7 +67,16 @@ extension MeasureSheetView {
         .font(.title)
       
       Button {
-        viewModel.timerStop()
+        viewModel.timerStop(context: context) { result in
+          switch result {
+          case .success:
+            print("성공")
+          case .failed:
+            print("실패")
+          case .skippedLessThan10Minutes:
+            print("10분 미만")
+          }
+        }
       } label: {
         Image(systemName: "stop.fill")
           .foregroundStyle(.white)
@@ -102,6 +114,6 @@ extension MeasureSheetView {
   }
 }
 
-#Preview {
-  MeasureSheetView(viewModel: MeasureViewModel())
-}
+//#Preview {
+//  MeasureSheetView(viewModel: MeasureViewModel())
+//}

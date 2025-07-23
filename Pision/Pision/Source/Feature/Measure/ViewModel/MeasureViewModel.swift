@@ -5,23 +5,24 @@
 //  Created by 여성일 on 7/13/25.
 //
 
-import Foundation
-import Combine
-import SwiftUI
 import AVFoundation
+import Combine
+import SwiftData
+import SwiftUI
+import Foundation
 
 final class MeasureViewModel: ObservableObject {
   // Published Var
   @Published private(set) var timerState: TimerState = .stopped
   @Published private(set) var secondsElapsed: Int = 0
   @Published private(set) var currentFocusRatio: Float = 0.0
+  @Published private(set) var shouldDimScreen: Bool = false
   @Published var isAutoBrightnessModeOn: Bool = false {
     didSet {
       if !isAutoBrightnessModeOn {
         startAutoBrightnessMode()
       } else {
         cancelAutoBrightnessMode()
-        restoreBrightness()
       }
     }
   }
@@ -34,6 +35,7 @@ final class MeasureViewModel: ObservableObject {
   private var auxScoreHistory: [AuxScoreModel] = []
   private var coreScoreHistory10Minute: [AvgCoreScoreModel] = []
   private var auxScoreHistory10Minute: [AvgAuxScoreModel] = []
+  private var taskData: TaskDataModel?
   private var focusTime: Int = 0
   private var focusRatios: [Float] = []
   
@@ -48,6 +50,7 @@ final class MeasureViewModel: ObservableObject {
   private let cameraManager: CameraManager
   private let visionManager = VisionManager()
   private let scoreManager = ScoreManager()
+  private let swiftDataManager = SwiftDataManager()
   
   // Session
   var session: AVCaptureSession {
@@ -60,7 +63,7 @@ final class MeasureViewModel: ObservableObject {
     if !isAutoBrightnessModeOn {
       startAutoBrightnessMode()
     } else {
-      restoreBrightness()
+      cancelAutoBrightnessMode()
     }
   }
   
@@ -70,6 +73,19 @@ final class MeasureViewModel: ObservableObject {
   
   func cameraStop() {
     cameraManager.stopSession()
+  }
+  
+  func resetAutoDimTimer() {
+    brightnessTimer?.cancel()
+    
+    let task = DispatchWorkItem { [weak self] in
+      self?.shouldDimScreen = true
+    }
+    
+    brightnessTimer = task
+    DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: task)
+    
+    shouldDimScreen = false
   }
   
   func timerStart() {
@@ -94,16 +110,20 @@ final class MeasureViewModel: ObservableObject {
     cameraManager.startMeasuring()
   }
   
-  func timerStop() {
+  func timerStop(context: ModelContext, completion: @escaping (SaveResult) -> Void) {
     timer?.invalidate()
     timer = nil
     timerState = .stopped
     cameraManager.stopMeasuring()
-    restoreBrightness()
+    cancelAutoBrightnessMode()
     
     saveRemainingAverage()
     
-    saveTaskData()
+    saveTaskDataAndSaveToSwiftData(context: context, completion: completion)
+  }
+  
+  func debugPrintAllSavedData(context: ModelContext) {
+    swiftDataManager.fetchAllTaskData(context: context)
   }
 }
 
@@ -129,7 +149,7 @@ extension MeasureViewModel {
   private func startAutoBrightnessMode() {
     brightnessTimer?.cancel()
     let task = DispatchWorkItem {
-      UIScreen.main.brightness = 0.01
+      self.shouldDimScreen = true
     }
     brightnessTimer = task
     DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: task)
@@ -138,10 +158,7 @@ extension MeasureViewModel {
   private func cancelAutoBrightnessMode() {
     brightnessTimer?.cancel()
     brightnessTimer = nil
-  }
-  
-  private func restoreBrightness() {
-    UIScreen.main.brightness = 1.0
+    shouldDimScreen = false
   }
   
   private func calculateScores() {
@@ -207,7 +224,12 @@ extension MeasureViewModel {
     focusRatios.append(ratio)
   }
   
-  private func saveTaskData() {
+  private func saveTaskDataAndSaveToSwiftData(context: ModelContext, completion: @escaping (SaveResult) -> Void) {
+    if secondsElapsed < 600 {
+      completion(.skippedLessThan10Minutes)
+      return
+    }
+    
     let avgScore = (Float(focusTime) / Float(secondsElapsed)) * 100
     let data = TaskDataModel(
       startTime: Date().addingTimeInterval(-TimeInterval(secondsElapsed)),
@@ -219,7 +241,19 @@ extension MeasureViewModel {
       avgCoreDatas: coreScoreHistory10Minute,
       avgAuxDatas: auxScoreHistory10Minute
     )
-    print("\n===== 저장된 측정 결과 =====")
-    print(data)
+    self.taskData = data
+    
+    guard let taskData = self.taskData else {
+      completion(.failed)
+      return
+    }
+    
+    swiftDataManager.saveTaskDataToSwiftData(context: context, taskData: taskData) { isSuccess in
+      if isSuccess {
+        completion(.success)
+      } else {
+        completion(.failed)
+      }
+    }
   }
 }
