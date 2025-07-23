@@ -37,7 +37,7 @@ extension MeasureSheetView {
         
         infoView
         
-        Text("80%")
+        Text("\(viewModel.currentFocusRatio)")
           .foregroundStyle(.white)
           .frame(width: 109, height: 40)
           .background(.gray)
