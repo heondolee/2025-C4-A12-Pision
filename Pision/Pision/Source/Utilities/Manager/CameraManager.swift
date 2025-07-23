@@ -10,6 +10,7 @@ import AVFoundation
 final class CameraManager: NSObject {
   let session = AVCaptureSession()
   
+  private var isMeasuring: Bool = false
   private let videoOutput = AVCaptureVideoDataOutput()
   private var isSessionConfigured = false
   private let sessionQueue = DispatchQueue(label: "CameraSessionQueue")
@@ -35,6 +36,14 @@ final class CameraManager: NSObject {
         self.session.stopRunning()
       }
     }
+  }
+  
+  func startMeasuring() {
+    isMeasuring = true
+  }
+  
+  func stopMeasuring() {
+    isMeasuring = false
   }
   
   func requestAndCheckPermissions() {
@@ -98,6 +107,7 @@ final class CameraManager: NSObject {
 
 extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
   func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+    guard isMeasuring else { return }
     guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
     visionManager.processFaceLandMark(pixelBuffer: pixelBuffer)
     visionManager.processBodyPose(pixelBuffer: pixelBuffer)
