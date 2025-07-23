@@ -4,211 +4,114 @@
 //
 //  Created by 여성일 on 7/13/25.
 //
+//
+//import Foundation
+//import Vision
+//
 
 import Foundation
 import Vision
 
-// MARK: - General
+// MARK: - VisionManager
 final class VisionManager: ObservableObject {
-  @Published private(set) var latestCoreScore: CoreScore?
-  @Published private(set) var latestAuxScore: AuxScore?
-  @Published private(set) var totalScore: [Float] = []
-  @Published private(set) var pose: VNHumanBodyPoseObservation?
+  // Published Var
+  @Published private(set) var ears: [Float] = []
+  @Published private(set) var yaws: [Float] = []
+  @Published private(set) var mlPredictions: [String] = []
+  @Published private(set) var blinkCount: Int = 0
   
-  private let sequenceHandler = VNSequenceRequestHandler() // 비전 시퀸스 처리 핸들러 객체
-  private let faceRequest = VNDetectFaceLandmarksRequest() // 얼굴 인식 request 값
-  private let poseRequest = VNDetectHumanBodyPoseRequest() // 포즈 인식 request 값
-  
-  private var avgYAW: Float = 0
-  private var isBlink: Bool = false
-  private var blinkCount: Int = 0
-  private var yaws: [Float] = []
-  private var rolls: [Float] = []
-  private var ears: [Float] = []
-  private var mlPredictions: [String] = []
-  
+  // General var
+  private let sequenceHandler = VNSequenceRequestHandler()
+  private let faceRequest = VNDetectFaceLandmarksRequest()
+  private let poseRequest = VNDetectHumanBodyPoseRequest()
   private let mlManager = MLManager()!
+  
+  private var isBlink: Bool = false
 }
 
-// MARK: - Extension
+// MARK: - General Func
 extension VisionManager {
+  /// 모든 데이터를 초기화 합니다.
+  /// 새로운 세션이나, 측정을 시작하기 전에 이전 데이터를 초기화할 때 사용합니다.
+  func reset() {
+    ears.removeAll()
+    yaws.removeAll()
+    mlPredictions.removeAll()
+    blinkCount = 0
+  }
+  
+  /// 얼굴의 랜드마크 정보를 처리하여 고개 회전 각도(YAW), 눈 비율(EAR), 눈 깜빡임 여부를 계산합니다.
+  /// Vision 프레임워크를 이용해 얼굴을 분석하고, 분석된 결과를 기반으로 내부 상태를 업데이트합니다.
+  /// - Parameter pixelBuffer: 분석할 영상 프레임의 픽셀 버퍼입니다.
   func processFaceLandMark(pixelBuffer: CVPixelBuffer) {
     do {
       try sequenceHandler.perform([faceRequest], on: pixelBuffer)
-      
-      guard let result = faceRequest.results else { return }
-      
-      var yaws: [Float] = []
-      var rolls: [Float] = []
-      var ears: [Float] = []
-      
-      for face in result {
-        if let yaw = face.yaw?.doubleValue {
-          yaws.append(Float(yaw))
+      guard let results = faceRequest.results else { return }
+      for face in results {
+        if let yaw = face.yaw?.floatValue {
+          yaws.append(abs(yaw))
         }
-        
-        if let roll = face.roll?.doubleValue {
-          rolls.append(Float(roll))
-        }
-        
         if let landmarks = face.landmarks,
            let leftEye = landmarks.leftEye,
            let rightEye = landmarks.rightEye {
           let leftEAR = calculateEAR(leftEye)
           let rightEAR = calculateEAR(rightEye)
-          
           let avgEAR = (leftEAR + rightEAR) / 2.0
-          ears.append(Float(avgEAR))
-          
-          countBlink(leftEAR: leftEAR, rightEAR: rightEAR, threshold: 0.1)
+          ears.append(avgEAR)
+          countBlink(leftEAR: CGFloat(leftEAR), rightEAR: CGFloat(rightEAR))
         }
       }
-      
-      DispatchQueue.main.async {
-        self.yaws.append(contentsOf: yaws)
-        self.rolls.append(contentsOf: rolls)
-        self.ears.append(contentsOf: ears)
-      }
     } catch {
-      print("Log: Vision Face 처리 에러")
+      print("Face Landmark 처리 실패")
     }
   }
   
+  /// 사람의 몸 자세를 분석하여 머신러닝 모델로부터 예측 결과(레이블)를 받아옵니다.
+  /// Vision 프레임워크를 사용해 포즈를 추출하고, 추출된 첫 번째 결과를 ML 모델에 입력하여 동작을 분류합니다.
+  /// - Parameter pixelBuffer: 분석할 영상 프레임의 픽셀 버퍼입니다.
   func processBodyPose(pixelBuffer: CVPixelBuffer) {
     do {
       try sequenceHandler.perform([poseRequest], on: pixelBuffer)
-      
-      var labels: [String] = []
-      guard let result = poseRequest.results,
-            let first = result.first else { return }
-      
+      guard let first = poseRequest.results?.first else { return }
       let label = mlManager.bodyPosePredict(from: first)
-      labels.append(label)
-      
-      DispatchQueue.main.async {
-        self.pose = first
-        self.mlPredictions.append(contentsOf: labels)
-      }
+      mlPredictions.append(label)
     } catch {
-      print("Log: Vision Pose 처리 에러")
+      print("Body Pose 처리 실패")
     }
   }
 }
 
-// MARK: - Private func
+// MARK: - Private Func
 extension VisionManager {
-  private func restData() {
-    yaws.removeAll()
-    ears.removeAll()
-    mlPredictions.removeAll()
-    blinkCount = 0
+  /// 눈의 EAR(Eye Aspect Ratio)을 계산하여 눈이 얼마나 감겨 있는지를 측정합니다.
+  /// EAR 값이 작을수록 눈이 감긴 상태에 가깝습니다.
+  /// - Parameter eye: Vision에서 추출된 눈의 랜드마크 포인트입니다.
+  /// - Returns: 계산된 EAR 값입니다. 포인트가 부족할 경우 기본값 0.25를 반환합니다.
+  private func calculateEAR(_ eye: VNFaceLandmarkRegion2D) -> Float {
+    let pts = eye.normalizedPoints
+    guard pts.count >= 6 else { return 0.25 }
+    let v1 = pts[1].eyeDistance(to: pts[5])
+    let v2 = pts[2].eyeDistance(to: pts[4])
+    let h = pts[0].eyeDistance(to: pts[3])
+    return Float((v1 + v2) / (2 * h))
   }
-}
 
-// MARK: - General Calc
-extension VisionManager {
-  private func minMaxNormalize(value: Float, minValue: Float = 0, maxValue: Float) -> Float {
-    guard maxValue != minValue else { return 0 }
-    return min(max((value - minValue) / (maxValue - minValue), 0), 1)
-  }
-}
-
-// MARK: - EAR Calc
-extension VisionManager {
-  private func calculateEAR(_ eye: VNFaceLandmarkRegion2D) -> CGFloat {
-    let points = eye.normalizedPoints
-    
-    guard points.count >= 6 else { return 0.25 }
-    
-    let leftVerticalDist = points[1].eyeDistance(to: points[5])
-    let rightVerticalDist = points[2].eyeDistance(to: points[4])
-    let horizontalDist = points[0].eyeDistance(to: points[3])
-    
-    let ear = (leftVerticalDist + rightVerticalDist) / (2 * horizontalDist)
-    
-    return ear
-  }
-  
-  private func countBlink(leftEAR: CGFloat, rightEAR: CGFloat, threshold: CGFloat) {
-    let isLeftBlinking = leftEAR < threshold
-    let isRightBlinking = rightEAR < threshold
-    
-    if isLeftBlinking && isRightBlinking {
-      if !isBlink {
-        isBlink = true
-      }
+  /// 양쪽 눈의 EAR 값을 기반으로 눈 깜빡임 여부를 판단하고 깜빡임 횟수를 증가시킵니다.
+  /// EAR 값이 일정 임계값(threshold)보다 작을 경우 눈을 감은 것으로 판단합니다.
+  /// - Parameters:
+  ///   - leftEAR: 왼쪽 눈의 EAR 값
+  ///   - rightEAR: 오른쪽 눈의 EAR 값
+  ///   - threshold: 눈 감김을 판단할 기준 EAR 임계값 (기본값: 0.1)
+  private func countBlink(leftEAR: CGFloat, rightEAR: CGFloat, threshold: CGFloat = 0.1) {
+    let leftClosed = leftEAR < threshold
+    let rightClosed = rightEAR < threshold
+    if leftClosed && rightClosed {
+      if !isBlink { isBlink = true }
     } else {
       if isBlink {
-        isBlink = false
         blinkCount += 1
+        isBlink = false
       }
     }
-  }
-}
-
-// MARK: - Score Calculate
-extension VisionManager {
-  func calculateAllScores() {
-    // Calc CoreScore
-    let avgYaw = yaws.map { abs($0) >= 0.786 ? abs($0) : 0.0 }.average()
-    let yawScore = (1 - minMaxNormalize(value: avgYaw, maxValue: 0.7)) * 100 * 0.25
-
-    let avgEAR = ears.map { abs($0) }.average()
-    let eyeOpenScore = minMaxNormalize(value: avgEAR, minValue: 0.1, maxValue: 0.18) * 100 * 0.30
-    let eyeClosedRatio = (Float(ears.filter { $0 < 0.1 }.count) * 0.0405) / 30.0
-    let eyeClosedScore = (1.0 - minMaxNormalize(value: eyeClosedRatio, minValue: 0, maxValue: 1)) * 100 * 0.20
-    let blinkRatio = Float(blinkCount) / 15
-    let blinkFrequency = max(0, (1.0 - blinkRatio) * 100 * 0.25)
-
-    let coreScoreValue = yawScore + eyeOpenScore + blinkFrequency + eyeClosedScore
-    let core = CoreScore(
-      yawScore: yawScore,
-      eyeOpenScore: eyeOpenScore,
-      eyeClosedScore: eyeClosedScore,
-      blinkFrequency: blinkFrequency,
-      coreScore: coreScoreValue
-    )
-    
-    // Calc AuxScore
-    let blinkScore = (1.0 - minMaxNormalize(value: Float(blinkCount), maxValue: 30)) * 100 * 0.25
-    
-    let yawDiffs = zip(yaws.dropFirst(), yaws).map { abs($0 - $1) }
-    let avgYawChange = yawDiffs.average()
-    let yawStabilityScore = (1 - minMaxNormalize(value: avgYawChange, minValue: 0, maxValue: 0.2)) * 100 * 0.35
-    
-    let count = min(mlPredictions.count, ears.count, yaws.count)
-    let snoozePredictions = (0..<count).map { i in
-      let isSnooze = mlPredictions[i] == ModelLabel.snooze.rawValue
-      let isLowEAR = ears[i] < 0.1
-      let isHighYaw = abs(yaws[i]) > 0.3
-      return isSnooze || isLowEAR || isHighYaw
-    }
-    let snoozeCount = snoozePredictions.filter { $0 }.count
-    let snoozeRatio: Float = snoozePredictions.isEmpty ? 0 : Float(snoozeCount) / Float(snoozePredictions.count)
-    let mlSnoozeScore = pow(1.0 - snoozeRatio, 2) * 100 * 0.4
-    
-    let auxScoreValue = blinkScore + yawStabilityScore + mlSnoozeScore
-    
-    let aux = AuxScore(
-      blinkScore: blinkScore,
-      yawStabilityScore: yawStabilityScore,
-      mlSnoozeScore: mlSnoozeScore,
-      AuxScore: auxScoreValue
-    )
-
-    // Calc TotalScore
-    let total = (0.7 * core.coreScore) + (0.3 * aux.AuxScore)
-    
-    DispatchQueue.main.async {
-      self.latestCoreScore = core
-      self.latestAuxScore = aux
-      self.totalScore.append(total)
-    }
-
-    print("CoreScore:", core)
-    print("AuxScore:", aux)
-    print("✅ Total Score:", total)
-
-    restData()
   }
 }

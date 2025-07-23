@@ -8,6 +8,7 @@
 import CoreML
 import Vision
 
+// MARK: - MLManager
 final class MLManager {
   private let model: pisionModel
   private var poseBuffer: [VNHumanBodyPoseObservation] = []
@@ -19,7 +20,14 @@ final class MLManager {
     }
     self.model = loaded
   }
+}
 
+// MARK: - General Func
+extension MLManager {
+  /// 사람의 자세 관측값을 입력으로 받아, 학습된 CoreML 모델을 통해 동작 라벨을 예측합니다.
+  ///
+  /// - Parameter observation: `VNHumanBodyPoseObservation` 형태의 단일 자세 프레임입니다.
+  /// - Returns: 예측된 동작 라벨 문자열. 입력이 30프레임 미만일 경우 빈 문자열을 반환합니다.
   func bodyPosePredict(from observation: VNHumanBodyPoseObservation) -> String {
     poseBuffer.append(observation)
     
