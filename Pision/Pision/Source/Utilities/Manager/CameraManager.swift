@@ -7,6 +7,7 @@
 
 import AVFoundation
 
+// MARK: - CameraManager
 final class CameraManager: NSObject {
   let session = AVCaptureSession()
   
@@ -21,7 +22,12 @@ final class CameraManager: NSObject {
     self.visionManager = visionManager
     super.init()
   }
-  
+}
+
+// MARK: - General Func
+extension CameraManager {
+  /// 캡처 세션을 시작합니다.
+  /// `sessionQueue`에서 비동기적으로 실행되며, 이미 실행 중인 경우는 무시합니다.
   func startSession() {
     sessionQueue.async {
       if !self.session.isRunning {
@@ -30,6 +36,8 @@ final class CameraManager: NSObject {
     }
   }
   
+  /// 캡처 세션을 중지합니다.
+  /// `sessionQueue`에서 비동기적으로 실행되며, 실행 중이 아닐 경우는 무시합니다.
   func stopSession() {
     sessionQueue.async {
       if self.session.isRunning {
@@ -38,14 +46,21 @@ final class CameraManager: NSObject {
     }
   }
   
+  /// 측정을 시작합니다.
+  /// 내부 상태 변수 `isMeasuring`을 `true`로 설정합니다.
   func startMeasuring() {
     isMeasuring = true
   }
   
+  /// 측정을 중단합니다.
+  /// 내부 상태 변수 `isMeasuring`을 `false`로 설정합니다.
   func stopMeasuring() {
     isMeasuring = false
   }
   
+  
+  /// 카메라 권한을 요청하고, 허용된 경우 세션 구성을 진행합니다.
+  /// 이미 권한이 있는 경우 바로 구성하며, 거부된 경우 로그만 출력합니다.
   func requestAndCheckPermissions() {
     switch AVCaptureDevice.authorizationStatus(for: .video) {
     case .notDetermined:
@@ -65,13 +80,20 @@ final class CameraManager: NSObject {
       print("알 수 없는 권한 상태")
     }
   }
-  
+}
+
+// MARK: - Private Func
+extension CameraManager {
+  /// 세션이 아직 구성되지 않은 경우 한 번만 세션을 구성합니다.
+  /// `isSessionConfigured` 플래그를 이용해 중복 구성을 방지합니다.
   private func configureSessionIfNeeded() {
     guard !isSessionConfigured else { return }
     isSessionConfigured = true
     configureSession()
   }
   
+  /// 캡처 세션을 구성합니다.
+  /// 프론트 카메라를 입력으로 설정하고, 비디오 출력 설정 및 델리게이트를 등록합니다.
   private func configureSession() {
     session.beginConfiguration()
     session.sessionPreset = .high
@@ -105,6 +127,7 @@ final class CameraManager: NSObject {
   }
 }
 
+// MARK: - Delegate
 extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
   func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
     guard isMeasuring else { return }
@@ -113,3 +136,5 @@ extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
     visionManager.processBodyPose(pixelBuffer: pixelBuffer)
   }
 }
+
+

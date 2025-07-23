@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct CoreScore {
+struct CoreScoreModel {
   let yawScore: Float
   let eyeOpenScore: Float
   let eyeClosedScore: Float
