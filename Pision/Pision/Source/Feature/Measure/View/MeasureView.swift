@@ -46,8 +46,22 @@ extension MeasureView {
         
         Spacer()
         
-        MeasureSheetView(viewModel: viewModel)
-          .frame(maxWidth: .infinity, maxHeight: 196)
+        VStack {
+          Button {
+            viewModel.timerStart()
+            updateBottomButtonVisibility()
+          } label: {
+            Image(systemName: "play.fill")
+              .foregroundStyle(.white)
+              .frame(width: 70, height: 70)
+              .background(.blue)
+              .clipShape(.circle)
+          }
+          .buttonStyle(.plain)
+          
+          MeasureSheetView(viewModel: viewModel)
+            .frame(maxWidth: .infinity, maxHeight: 196)
+        }
       }
     }
     .onAppear {
@@ -55,34 +69,6 @@ extension MeasureView {
     }
     .onDisappear {
       viewModel.cameraStop()
-    }
-  }
-  
-  private var MeasureBottomView: some View {
-    ZStack(alignment: .center) {
-      if viewModel.timerState == .stopped {
-        Button {
-          viewModel.timerStart()
-          updateBottomButtonVisibility()
-        } label: {
-          Image(systemName: "play.fill")
-            .foregroundStyle(.white)
-            .frame(width: 70, height: 70)
-            .background(.blue)
-            .clipShape(.circle)
-        }
-        .buttonStyle(.plain)
-      } else {
-        Button {
-          showSheet()
-        } label : {
-          Image(systemName: "note.text")
-            .foregroundStyle(.white)
-            .frame(width: 70, height: 70)
-            .background(.gray)
-            .clipShape(.circle)
-        }
-      }
     }
   }
 }
