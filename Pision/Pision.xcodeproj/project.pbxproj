@@ -10,9 +10,22 @@
 		9E4A43B02E250D4600B92B46 /* Pision.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pision.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		9E259D992E3156A300986DD6 /* Exceptions for "Pision" folder in "Pision" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 9E4A43AF2E250D4600B92B46 /* Pision */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		9E4A43B22E250D4600B92B46 /* Pision */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9E259D992E3156A300986DD6 /* Exceptions for "Pision" folder in "Pision" target */,
+			);
 			path = Pision;
 			sourceTree = "<group>";
 		};
@@ -257,6 +270,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Pision/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "집중도 분석 기능을 사용하려면 카메라 접근 권한이 필요합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -289,6 +303,7 @@
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = X67DB976UU;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Pision/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "집중도 분석 기능을 사용하려면 카메라 접근 권한이 필요합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
