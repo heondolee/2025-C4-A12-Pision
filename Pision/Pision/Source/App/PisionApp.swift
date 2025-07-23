@@ -11,7 +11,8 @@ import SwiftUI
 struct PisionApp: App {
   var body: some Scene {
     WindowGroup {
-      MeasureView()
+//      MeasureView()
+      AnalyzeView()
     }
   }
 }

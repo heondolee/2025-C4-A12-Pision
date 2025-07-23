@@ -16,13 +16,15 @@ struct AnalyzeView: View {
 // MARK: - body 뷰
 extension AnalyzeView {
   var body: some View {
-    VStack(spacing: 24) {
-      FocusTimeOverview(taskData: taskData)
-      HourlyFocusChart(taskData: taskData)
-      CoreScoreSection(taskData: taskData)
-      AuxScoreSection(taskData: taskData)
+    ScrollView {
+      VStack(spacing: 24) {
+        FocusTimeOverview(taskData: taskData)
+        HourlyFocusChart(taskData: taskData)
+        CoreScoreSection(taskData: taskData)
+        AuxScoreSection(taskData: taskData)
+      }
+      .padding()
     }
-    .padding()
   }
 }
 
@@ -98,7 +100,7 @@ extension AnalyzeView {
   }
 }
 
-// MARK: - CoreScore 뷰 (꺾은선 그래프)
+// MARK: - CoreScore 꺾은선 그래프
 extension AnalyzeView {
   struct CoreScoreSection: View {
     let taskData: TaskData
@@ -107,27 +109,18 @@ extension AnalyzeView {
       let id = UUID()
       let index: Int
       let value: Double
-      let category: String // 예: "yawScore", "blinkScore"
+      let category: String
     }
 
-    var allScoreEntries: [ScoreDetailEntry] {
+    var coreScoreEntries: [ScoreDetailEntry] {
+      guard let coreScores = taskData.coreScores else { return [] }
       var entries: [ScoreDetailEntry] = []
 
-      if let coreScores = taskData.coreScores {
-        for (idx, score) in coreScores.enumerated() {
-          entries.append(ScoreDetailEntry(index: idx + 1, value: Double(score.yawScore), category: "yawScore"))
-          entries.append(ScoreDetailEntry(index: idx + 1, value: Double(score.eyeOpenScore), category: "eyeOpenScore"))
-          entries.append(ScoreDetailEntry(index: idx + 1, value: Double(score.eyeClosedScore), category: "eyeClosedScore"))
-          entries.append(ScoreDetailEntry(index: idx + 1, value: Double(score.blinkScore), category: "blinkScore"))
-        }
-      }
-
-      if let auxScores = taskData.auxScores {
-        for (idx, score) in auxScores.enumerated() {
-          entries.append(ScoreDetailEntry(index: idx + 1, value: Double(score.yawStabilityScore), category: "yawStabilityScore"))
-          entries.append(ScoreDetailEntry(index: idx + 1, value: Double(score.mlSnoozeScore), category: "mlSnoozeScore"))
-          entries.append(ScoreDetailEntry(index: idx + 1, value: Double(score.blinkScoreAux), category: "blinkScoreAux"))
-        }
+      for (idx, score) in coreScores.enumerated() {
+        entries.append(ScoreDetailEntry(index: idx + 1, value: Double(score.yawScore) * 2.5, category: "yawScore"))
+        entries.append(ScoreDetailEntry(index: idx + 1, value: Double(score.eyeOpenScore) * 4.0, category: "eyeOpenScore"))
+        entries.append(ScoreDetailEntry(index: idx + 1, value: Double(score.eyeClosedScore) * 5.0, category: "eyeClosedScore"))
+        entries.append(ScoreDetailEntry(index: idx + 1, value: Double(score.blinkScore) * (100.0 / 15.0), category: "blinkScore"))
       }
 
       return entries
@@ -135,11 +128,11 @@ extension AnalyzeView {
 
     var body: some View {
       VStack(alignment: .leading, spacing: 8) {
-        Text("Core & Aux Score 세부 지표")
+        Text("Core Score 세부 지표")
           .font(.headline)
 
         Chart {
-          ForEach(allScoreEntries) { entry in
+          ForEach(coreScoreEntries) { entry in
             LineMark(
               x: .value("Index", entry.index),
               y: .value("Score", entry.value)
@@ -164,20 +157,61 @@ extension AnalyzeView {
 }
 
 
-
-// MARK: - AuxScore 뷰
+// MARK: - AuxScore 꺾은선 그래프
 extension AnalyzeView {
   struct AuxScoreSection: View {
     let taskData: TaskData
-    
+
+    struct ScoreDetailEntry: Identifiable {
+      let id = UUID()
+      let index: Int
+      let value: Double
+      let category: String
+    }
+
+    var auxScoreEntries: [ScoreDetailEntry] {
+      guard let auxScores = taskData.auxScores else { return [] }
+      var entries: [ScoreDetailEntry] = []
+
+      for (idx, score) in auxScores.enumerated() {
+        entries.append(ScoreDetailEntry(index: idx + 1, value: Double(score.blinkScoreAux) * 4.0, category: "blinkScoreAux"))
+        entries.append(ScoreDetailEntry(index: idx + 1, value: Double(score.yawStabilityScore) * 4.0, category: "yawStabilityScore"))
+        entries.append(ScoreDetailEntry(index: idx + 1, value: Double(score.mlSnoozeScore) * 2.0, category: "mlSnoozeScore"))
+      }
+
+      return entries
+    }
+
     var body: some View {
-      VStack(alignment: .leading) {
-        Text("AuxScore").font(.headline)
-        Text("평균 \(Int(taskData.averageAuxScore()))점")
+      VStack(alignment: .leading, spacing: 8) {
+        Text("Aux Score 세부 지표")
+          .font(.headline)
+
+        Chart {
+          ForEach(auxScoreEntries) { entry in
+            LineMark(
+              x: .value("Index", entry.index),
+              y: .value("Score", entry.value)
+            )
+            .interpolationMethod(.catmullRom)
+            .foregroundStyle(by: .value("Category", entry.category))
+
+            PointMark(
+              x: .value("Index", entry.index),
+              y: .value("Score", entry.value)
+            )
+            .symbolSize(20)
+            .foregroundStyle(by: .value("Category", entry.category))
+          }
+        }
+        .chartYScale(domain: 0...100)
+        .chartLegend(.visible)
+        .frame(height: 250)
       }
     }
   }
 }
+
 
 // MARK: - Helper
 extension AnalyzeView {
