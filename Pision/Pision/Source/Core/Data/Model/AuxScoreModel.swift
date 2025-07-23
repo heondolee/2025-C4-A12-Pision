@@ -7,9 +7,9 @@
 
 import Foundation
 
-struct AuxScore {
+struct AuxScoreModel {
   let blinkScore: Float
   let yawStabilityScore: Float
   let mlSnoozeScore: Float
-  let AuxScore: Float
+  let auxScore: Float
 }
